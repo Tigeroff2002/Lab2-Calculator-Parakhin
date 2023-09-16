@@ -22,38 +22,81 @@ public class MainActivity extends AppCompatActivity {
     boolean mAddition, mSubtract, mMultiplication, mDivision, mSqr, mSqrt;
 
     private String provideOperations(){
-        float commonResult = 0;
-        String[] newValues = new String[15];
-        for(int i = 0; i < newValues.length; i++){
-            newValues[i] = "";
-        }
 
-        for(int j = 0; j < Mvalues.length - 1; j = j + 1){
-            if (Mvalues[j].equals("*")){
-                float curResult = Float.parseFloat(Mvalues[j - 1]) * Float.parseFloat(Mvalues[j + 1]);
-                newValues[j - 1] = Float.toString(curResult);
-                newValues[j] = Mvalues[j];
-            }
-            else if (Mvalues[j].equals("/")){
-                float curResult = Float.parseFloat(Mvalues[j - 1]) / Float.parseFloat(Mvalues[j + 1]);
-                newValues[j - 1] = Float.toString(curResult);
-                newValues[j] = Mvalues[j];
-            }
-            else if (Mvalues[j].equals("sqr")){
-                float curResult = Float.parseFloat(Mvalues[j + 1]) * Float.parseFloat(Mvalues[j + 1]);
-                newValues[j] = Float.toString(curResult);
-                newValues[j + 1] = Mvalues[j + 1];
-            }
-            else if (Mvalues[j].equals("sqrt")){
-                double curResult = Math.sqrt(Float.parseFloat(Mvalues[j + 1]));
-                newValues[j] = Double.toString(curResult);
-                newValues[j + 1] = Mvalues[j + 1];
-            }
+        float commonResult = 0;
+
+        int vipOpsCount = CalculateVipOpsCount();
+
+        String[] newValues = Mvalues;
+
+        for(int i = 0; i <= vipOpsCount; i++){
+            newValues = makeOneLessVipOperation(newValues);
         }
 
         commonResult = provideBaseOperations(newValues);
 
         return Float.toString(commonResult);
+    }
+
+    private int CalculateVipOpsCount(){
+        int n = 0;
+        for(int i = 0; i < Mvalues.length - 1; i++){
+            if (Mvalues[i].equals("*") || Mvalues[i].equals("/")
+                    || Mvalues[i].equals("sqr") || Mvalues[i].equals("sqrt")){
+                n = n + 1;
+            }
+        }
+        return n;
+    }
+
+    private String[] makeOneLessVipOperation(String[] values){
+        String[] newValues = new String[15];
+
+        for(int i = 0; i < newValues.length; i++){
+            newValues[i] = "";
+        }
+
+        int k = 0;
+
+        int sqrCount = 0;
+
+        boolean vipOperationPerformed = false;
+
+        for(int j = 0; j < values.length - 1; j = j + 1) {
+
+            if (values[k].equals("*") && !vipOperationPerformed) {
+                float curResult = Float.parseFloat(values[k - 1]) * Float.parseFloat(values[k + 1]);
+                newValues[j - 1] = Float.toString(curResult);
+                vipOperationPerformed = true;
+                k += 2;
+            } else if (values[k].equals("/") && !vipOperationPerformed) {
+                if (Float.parseFloat(values[k + 1]) == 0){
+                    throw new IllegalArgumentException("Divide by zero");
+                }
+                float curResult = Float.parseFloat(values[k - 1]) / Float.parseFloat(values[k + 1]);
+                newValues[j - 1] = Float.toString(curResult);
+                vipOperationPerformed = true;
+                k += 2;
+            } else if (values[k].equals("sqr") && !vipOperationPerformed) {
+                float curResult = Float.parseFloat(values[k + 1]) * Float.parseFloat(values[k + 1]);
+                newValues[j] = Float.toString(curResult);
+                vipOperationPerformed = true;
+                k += 2;
+                sqrCount = sqrCount == 0 ? 1 : 0;
+            } else if (values[k].equals("sqrt") && !vipOperationPerformed) {
+                double curResult = Math.sqrt(Float.parseFloat(values[k + 1]));
+                newValues[j] = Double.toString(curResult);
+                vipOperationPerformed = true;
+                k += 2;
+                sqrCount = sqrCount == 0 ? 1 : 0;
+            } else {
+                int d = k - j - sqrCount;
+                newValues[j - d] = values[k];
+                k += 1;
+            }
+        }
+
+        return newValues;
     }
 
     private float provideBaseOperations(String[] newValues){
@@ -345,12 +388,28 @@ public class MainActivity extends AppCompatActivity {
                 if (wholeText.equals("")){
                     return;
                 }
-                Mvalues[currentIndex] = currentText;
-                currentText = "";
-                wholeText = "";
+
+                if (Mvalues[currentIndex].equals("sqr")
+                        || Mvalues[currentIndex].equals("sqrt")){
+                    Mvalues[currentIndex + 1] = currentText;
+                }
+                else{
+                    Mvalues[currentIndex] = currentText;
+                }
+
                 String result = provideOperations();
+
+                currentIndex = 0;
+
+                for(int i = 0; i < Mvalues.length; i++){
+                    Mvalues[i] = "";
+                }
+
                 currentText = result;
                 wholeText = result;
+
+                Mvalues[currentIndex] = currentText;
+
                 mEditText.setText(wholeText);
             }
         });
@@ -380,6 +439,7 @@ public class MainActivity extends AppCompatActivity {
                     if (!currentText.equals("")){
                         return;
                     }
+                    Mvalues[currentIndex] = "sqr";
                     wholeText += "sqr";
                     mEditText.setText(wholeText);
                     mSqr = true;
@@ -387,7 +447,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mButtonSqr.setOnClickListener(new View.OnClickListener() {
+        mButtonSqrt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mEditText == null) {
@@ -400,6 +460,7 @@ public class MainActivity extends AppCompatActivity {
                     if (!currentText.equals("")){
                         return;
                     }
+                    Mvalues[currentIndex] = "sqrt";
                     wholeText += "sqrt";
                     mEditText.setText(wholeText);
                     mSqrt = true;
